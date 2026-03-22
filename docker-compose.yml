@@ -1,0 +1,33 @@
+services:
+  # The Flask application service (built from your Dockerfile)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ravpn_web
+    restart: unless-stopped
+
+    # Run with gunicorn for production with gevent workers for WebSocket support
+    # -w 1: Single worker to maintain shared state for background thread
+    # -k gevent: Async worker for WebSocket/Socket.IO support
+    # --worker-connections 1000: Max concurrent connections per worker
+    # --timeout 300: 5 minute timeout for long requests
+    # --bind 0.0.0.0:5001: Listen on all interfaces
+    command: ["gunicorn", "-w", "1", "-k", "gevent", "--worker-connections", "1000", "--timeout", "300", "--bind", "0.0.0.0:5001", "app:app"]
+
+    # Environment variables (FLASK_APP not needed when running app.py directly)
+    environment:
+      - PYTHONUNBUFFERED=1
+
+    # Use your local .env file for secrets and FMC configs
+    env_file:
+      - .env
+
+    # Expose port 5001 to localhost only for Nginx Proxy Manager
+    ports:
+      - "127.0.0.1:5001:5001"
+
+    # Mount the application code for potential hot-reloading (dev) or easy access (prod)
+    # This mounts the current directory (where all source files are) to /app inside the container.
+    volumes:
+      - .:/app

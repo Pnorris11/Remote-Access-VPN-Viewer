@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<!-- Copyright 2025 Bandwidth Corp IT -->
+
+<html>
+<head>
+<title>VPN Users Monitor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.socket.io/4.6.0/socket.io.min.js" integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" crossorigin="anonymous"></script>
+<style>
+* {
+margin: 0;
+padding: 0;
+box-sizing: border-box;
+}
+
+    :root {
+        /* Modern Light Mode Colors */
+        --bg-primary: #f8fafc;
+        --bg-secondary: #ffffff;
+        --bg-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
+        --bg-gradient-alt: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
+        --bg-subtle: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 50%, #faf5ff 100%);
+
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-tertiary: #94a3b8;
+
+        --accent-primary: #06b6d4;
+        --accent-secondary: #3b82f6;
+        --accent-success: #10b981;
+        --accent-error: #ef4444;
+        --accent-warning: #f59e0b;
+
+        --border-color: #e2e8f0;
+        --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+        --card-bg: rgba(255, 255, 255, 0.95);
+        --hover-bg: rgba(6, 182, 212, 0.05);
+    }
+
+    [data-theme="dark"] {
+        /* Modern Dark Mode Colors */
+        --bg-primary: #0a0f1e;
+        --bg-secondary: #151b2e;
+        --bg-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 50%, #8b5cf6 100%);
+        --bg-gradient-alt: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
+        --bg-subtle: linear-gradient(135deg, #0a0f1e 0%, #151b2e 100%);
+
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --text-tertiary: #94a3b8;
+
+        --accent-primary: #22d3ee;
+        --accent-secondary: #60a5fa;
+        --accent-success: #34d399;
+        --accent-error: #f87171;
+        --accent-warning: #fbbf24;
+
+        --border-color: #1e293b;
+        --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.7);
+
+        --card-bg: rgba(21, 27, 46, 0.95);
+        --hover-bg: rgba(34, 211, 238, 0.1);
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--bg-subtle);
+        min-height: 100vh;
+        color: var(--text-primary);
+        line-height: 1.6;
+        transition: background 0.3s ease, color 0.3s ease;
+        position: relative;
+        padding-bottom: 60px;
+    }
+    
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+    
+    .header {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border-color);
+        padding: 20px 0;
+        margin-bottom: 40px;
+        box-shadow: var(--shadow-lg);
+        transition: all 0.3s ease;
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex: 1;
+    }
+
+    .header-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .logo {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 20px;
+        color: white;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        background: var(--bg-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        white-space: nowrap;
+    }
+
+    .user-info {
+        text-align: right;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 15px;
+        flex: 1;
+    }
+
+    .user-info .username {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 16px;
+    }
+
+    .theme-toggle {
+        background: var(--card-bg);
+        border: 2px solid var(--border-color);
+        color: var(--text-primary);
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .theme-toggle:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--accent-primary);
+    }
+
+    .user-info .logout-btn {
+        background: var(--bg-gradient);
+        color: white;
+        padding: 12px 24px;
+        text-decoration: none;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-md);
+    }
+
+    .user-info .logout-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .main-content {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 40px;
+        margin-bottom: 40px;
+        box-shadow: var(--shadow-xl);
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+    }
+
+    .search-form {
+        margin-bottom: 30px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    .search-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .user-count {
+        background: var(--bg-gradient);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 16px;
+        box-shadow: var(--shadow-md);
+        white-space: nowrap;
+        transition: all 0.3s ease;
+    }
+
+    .user-count .count {
+        font-size: 20px;
+        margin-left: 8px;
+    }
+
+    .search-form input[type="text"] {
+        padding: 15px 20px;
+        width: 300px;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        font-size: 16px;
+        font-family: inherit;
+        transition: all 0.3s ease;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+    }
+
+    .search-form input[type="text"]:focus {
+        outline: none;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+    }
+
+    .search-form input[type="submit"] {
+        padding: 15px 30px;
+        background: var(--bg-gradient);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-md);
+    }
+
+    .search-form input[type="submit"]:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .search-form a {
+        color: var(--accent-primary);
+        text-decoration: none;
+        font-weight: 500;
+        padding: 10px 15px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .search-form a:hover {
+        background: var(--hover-bg);
+    }
+    
+    .table-container {
+        overflow-x: auto;
+        border-radius: 16px;
+        box-shadow: var(--shadow-lg);
+        border: 1px solid var(--border-color);
+    }
+
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        background: var(--bg-secondary);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    th {
+        background: linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+        border-top: 2px solid var(--accent-primary);
+        color: var(--text-primary);
+        padding: 20px 16px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        position: relative;
+    }
+
+    [data-theme="light"] th {
+        background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+        border-top: 2px solid var(--accent-primary);
+        color: var(--text-primary);
+    }
+
+    td {
+        padding: 16px;
+        border-bottom: 1px solid var(--border-color);
+        font-size: 15px;
+        vertical-align: middle;
+        color: var(--text-primary);
+    }
+
+    tr:hover {
+        background: var(--hover-bg);
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    .country-cell {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .flash-messages {
+        margin-bottom: 30px;
+    }
+
+    .flash-success {
+        background: var(--accent-success);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .flash-error {
+        background: var(--accent-error);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        box-shadow: var(--shadow-md);
+    }
+
+    .flash-info {
+        background: var(--accent-primary);
+        color: white;
+        padding: 16px 24px;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        box-shadow: var(--shadow-md);
+    }
+    
+
+    .fmc-counts {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .fmc-count-bubble {
+        background: var(--bg-gradient-alt);
+        color: white;
+        padding: 20px 30px;
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: var(--shadow-md);
+        text-align: center;
+        min-width: 140px;
+        user-select: none;
+    }
+
+    .fmc-count-bubble:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-xl);
+    }
+
+    .fmc-count-bubble.active {
+        background: var(--bg-gradient);
+        box-shadow: var(--shadow-xl);
+        border: 2px solid var(--accent-primary);
+    }
+
+    .fmc-name {
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+        opacity: 0.95;
+    }
+
+    .fmc-count {
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .ws-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+
+    .ws-status.connected {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--accent-success);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .ws-status.disconnected {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--accent-error);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .ws-status.connecting {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--accent-warning);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .ws-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    .ws-status.connected .ws-indicator {
+        background: var(--accent-success);
+        box-shadow: 0 0 8px var(--accent-success);
+        animation: pulse 2s infinite;
+    }
+
+    .ws-status.disconnected .ws-indicator {
+        background: var(--accent-error);
+    }
+
+    .ws-status.connecting .ws-indicator {
+        background: var(--accent-warning);
+        animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .footer {
+        background: var(--card-bg);
+        backdrop-filter: blur(20px);
+        border-top: 1px solid var(--border-color);
+        padding: 15px 0;
+        box-shadow: 0 -10px 15px -3px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        z-index: 1000;
+    }
+
+    .footer-content {
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .footer-gradient-text {
+        background: var(--bg-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 600;
+    }
+
+    @media (max-width: 768px) {
+        .header-content {
+            flex-direction: column;
+            gap: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            white-space: normal;
+        }
+
+        .main-content {
+            padding: 20px;
+            margin: 20px;
+        }
+
+        .search-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-controls {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .search-form input[type="text"] {
+            width: 100%;
+        }
+
+        .user-count {
+            text-align: center;
+        }
+
+        table {
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px 8px;
+        }
+    }
+</style>
+
+
+</head>
+<body>
+<div class="header">
+<div class="container">
+<div class="header-content">
+<div class="header-left">
+<!--
+Changed this div to use an img tag pointing to the new 'logo' endpoint.
+The src uses url_for('logo') which matches the new function name in app.py.
+-->
+<div class="logo">
+<img src="{{ url_for('logo') }}" alt="Company Logo">
+</div>
+<h1>Active Global VPN Users</h1>
+</div>
+<div class="header-center">
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+<span class="theme-icon">☀️</span>
+</button>
+</div>
+<div class="user-info">
+<div id="wsStatus" class="ws-status connecting">
+    <span class="ws-indicator"></span>
+    <span id="wsStatusText">Connecting...</span>
+</div>
+{% if current_user and current_user.is_authenticated %}
+<span class="username">Welcome, {{ current_user.name or current_user.email }}</span>
+<a href="/auth/logout" class="logout-btn">Logout</a>
+{% else %}
+<span class="username">Debug Mode</span>
+{% endif %}
+</div>
+</div>
+</div>
+</div>
+
+<div class="container">
+    <div class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form class="search-form" action="/" method="get">
+            <div class="search-controls">
+                <input type="text" id="username" name="username" value="{{ search_term }}" placeholder="Search by username...">
+                <input type="submit" value="Search">
+                {% if search_term %}
+                    <a href="/">Clear Search</a>
+                {% endif %}
+            </div>
+            <div class="user-count total">
+                Total Users: <span class="count">{{ total_count }}</span>
+            </div>
+        </form>
+
+        <div class="fmc-counts">
+            {% for fmc_name, count in fmc_counts.items() %}
+            <div class="fmc-count-bubble" data-fmc="{{ fmc_name }}" onclick="filterByFMC('{{ fmc_name }}')">
+                <div class="fmc-name">{{ fmc_name }}</div>
+                <div class="fmc-count">{{ count }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>FMC Instance</th>
+                        <th>Username</th>
+                        <th>Assigned VPN IP</th>
+                        <th>User Public IP</th>
+                        <th>Country</th>
+                        <th>Login Time</th>
+                        <th>Group Policy</th>
+                    </tr>
+                </thead>
+                <tbody id="sessionTableBody">
+                    {% for session in sessions %}
+                    <tr>
+                        <td>{{ session.get('fmc', 'N/A') }}</td>
+                        <td>{{ session.get('username', 'N/A') }}</td>
+                        <td>{{ session.get('assigned_ip', 'N/A') }}</td>
+                        <td>{{ session.get('wan_ip', 'N/A') }}</td>
+                        <td><span class="country-cell" data-country="{{ session.get('country', 'N/A') }}">{{ session.get('country', 'N/A') }}</span></td>
+                        <td class="login-time" data-timestamp="{{ session.get('login_time', '') }}">{{ session.get('login_time', 'N/A') }}</td>
+                        <td>{{ session.get('group_policy', 'N/A') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+// Dark mode toggle functionality
+(function() {
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = themeToggle.querySelector('.theme-icon');
+    const html = document.documentElement;
+
+    // Check for saved theme preference or default to dark mode
+    const currentTheme = localStorage.getItem('theme') || 'dark';
+    html.setAttribute('data-theme', currentTheme);
+    updateIcon(currentTheme);
+
+    // Toggle theme on button click
+    themeToggle.addEventListener('click', function() {
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateIcon(newTheme);
+    });
+
+    function updateIcon(theme) {
+        themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+    }
+})();
+
+// Country to flag emoji mapping
+const countryToFlag = {
+    'United States': '🇺🇸',
+    'United Kingdom': '🇬🇧',
+    'Canada': '🇨🇦',
+    'Australia': '🇦🇺',
+    'Germany': '🇩🇪',
+    'France': '🇫🇷',
+    'Italy': '🇮🇹',
+    'Spain': '🇪🇸',
+    'Netherlands': '🇳🇱',
+    'Belgium': '🇧🇪',
+    'Switzerland': '🇨🇭',
+    'Austria': '🇦🇹',
+    'Sweden': '🇸🇪',
+    'Norway': '🇳🇴',
+    'Denmark': '🇩🇰',
+    'Finland': '🇫🇮',
+    'Poland': '🇵🇱',
+    'Czech Republic': '🇨🇿',
+    'Ireland': '🇮🇪',
+    'Portugal': '🇵🇹',
+    'Greece': '🇬🇷',
+    'Russia': '🇷🇺',
+    'Japan': '🇯🇵',
+    'China': '🇨🇳',
+    'South Korea': '🇰🇷',
+    'India': '🇮🇳',
+    'Brazil': '🇧🇷',
+    'Mexico': '🇲🇽',
+    'Argentina': '🇦🇷',
+    'Chile': '🇨🇱',
+    'Colombia': '🇨🇴',
+    'Peru': '🇵🇪',
+    'Venezuela': '🇻🇪',
+    'South Africa': '🇿🇦',
+    'Egypt': '🇪🇬',
+    'Israel': '🇮🇱',
+    'Turkey': '🇹🇷',
+    'Saudi Arabia': '🇸🇦',
+    'United Arab Emirates': '🇦🇪',
+    'Singapore': '🇸🇬',
+    'Malaysia': '🇲🇾',
+    'Thailand': '🇹🇭',
+    'Indonesia': '🇮🇩',
+    'Philippines': '🇵🇭',
+    'Vietnam': '🇻🇳',
+    'New Zealand': '🇳🇿',
+    'Hong Kong': '🇭🇰',
+    'Taiwan': '🇹🇼',
+    'Ukraine': '🇺🇦',
+    'Romania': '🇷🇴',
+    'Hungary': '🇭🇺',
+    'Bulgaria': '🇧🇬',
+    'Croatia': '🇭🇷',
+    'Serbia': '🇷🇸',
+    'Slovakia': '🇸🇰',
+    'Slovenia': '🇸🇮',
+    'Lithuania': '🇱🇹',
+    'Latvia': '🇱🇻',
+    'Estonia': '🇪🇪',
+    'Iceland': '🇮🇸',
+    'Luxembourg': '🇱🇺',
+    'Malta': '🇲🇹',
+    'Cyprus': '🇨🇾',
+    'Pakistan': '🇵🇰',
+    'Bangladesh': '🇧🇩',
+    'Nigeria': '🇳🇬',
+    'Kenya': '🇰🇪',
+    'Morocco': '🇲🇦',
+    'Algeria': '🇩🇿',
+    'Tunisia': '🇹🇳',
+    'Qatar': '🇶🇦',
+    'Kuwait': '🇰🇼',
+    'Bahrain': '🇧🇭',
+    'Oman': '🇴🇲',
+    'Jordan': '🇯🇴',
+    'Lebanon': '🇱🇧',
+    'Iraq': '🇮🇶',
+    'Iran': '🇮🇷',
+    'Afghanistan': '🇦🇫',
+    'Sri Lanka': '🇱🇰',
+    'Nepal': '🇳🇵',
+    'Myanmar': '🇲🇲',
+    'Cambodia': '🇰🇭',
+    'Laos': '🇱🇦',
+    'Mongolia': '🇲🇳',
+    'Kazakhstan': '🇰🇿',
+    'Uzbekistan': '🇺🇿',
+    'Azerbaijan': '🇦🇿',
+    'Georgia': '🇬🇪',
+    'Armenia': '🇦🇲'
+};
+
+// Add flags to country cells on page load
+function addCountryFlags() {
+    document.querySelectorAll('.country-cell').forEach(cell => {
+        const countryName = cell.dataset.country;
+        if (countryName && countryName !== 'N/A') {
+            const flag = countryToFlag[countryName] || '🌐';
+            cell.innerHTML = `${flag} ${countryName}`;
+        }
+    });
+}
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', addCountryFlags);
+
+// Function to format Unix timestamp to local browser time
+function formatTimestamp(timestamp) {
+    if (!timestamp || timestamp === 'N/A' || timestamp === '') {
+        return 'N/A';
+    }
+
+    // Convert Unix timestamp to JavaScript Date object (multiply by 1000 to convert to milliseconds)
+    const date = new Date(timestamp * 1000);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+        return 'N/A';
+    }
+
+    // Format: YYYY-MM-DD HH:MM:SS in local browser time
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    // Return formatted local time
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+// Convert all timestamps to local time on page load
+function convertTimestampsToLocal() {
+    document.querySelectorAll('.login-time').forEach(cell => {
+        const timestamp = cell.dataset.timestamp;
+        if (timestamp) {
+            cell.textContent = formatTimestamp(timestamp);
+        }
+    });
+}
+
+// Run on page load
+document.addEventListener('DOMContentLoaded', convertTimestampsToLocal);
+
+// WebSocket Live Updates
+let socket = null;
+let reconnectAttempts = 0;
+const maxReconnectAttempts = 10;
+let keepaliveInterval = null;
+
+function initWebSocket() {
+    // Initialize Socket.IO connection
+    socket = io({
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: maxReconnectAttempts
+    });
+
+    const wsStatus = document.getElementById('wsStatus');
+    const wsStatusText = document.getElementById('wsStatusText');
+
+    // Connection event
+    socket.on('connect', () => {
+        console.log('WebSocket connected');
+        reconnectAttempts = 0;
+        wsStatus.className = 'ws-status connected';
+        wsStatusText.textContent = 'Live';
+
+        // Start keepalive ping every 5 minutes to maintain session
+        if (keepaliveInterval) {
+            clearInterval(keepaliveInterval);
+        }
+        keepaliveInterval = setInterval(() => {
+            if (socket && socket.connected) {
+                console.log('Sending keepalive ping');
+                socket.emit('keepalive');
+            }
+        }, 5 * 60 * 1000); // 5 minutes
+    });
+
+    // Disconnection event
+    socket.on('disconnect', (reason) => {
+        console.log('WebSocket disconnected:', reason);
+        wsStatus.className = 'ws-status disconnected';
+        wsStatusText.textContent = 'Disconnected';
+
+        // Stop keepalive interval on disconnect
+        if (keepaliveInterval) {
+            clearInterval(keepaliveInterval);
+            keepaliveInterval = null;
+        }
+    });
+
+    // Reconnection attempt
+    socket.on('reconnect_attempt', (attemptNumber) => {
+        console.log('Reconnecting... Attempt:', attemptNumber);
+        reconnectAttempts = attemptNumber;
+        wsStatus.className = 'ws-status connecting';
+        wsStatusText.textContent = `Reconnecting... (${attemptNumber})`;
+    });
+
+    // Successful reconnection
+    socket.on('reconnect', (attemptNumber) => {
+        console.log('WebSocket reconnected after', attemptNumber, 'attempts');
+        wsStatus.className = 'ws-status connected';
+        wsStatusText.textContent = 'Live';
+    });
+
+    // Reconnection failed
+    socket.on('reconnect_failed', () => {
+        console.error('WebSocket reconnection failed');
+        wsStatus.className = 'ws-status disconnected';
+        wsStatusText.textContent = 'Connection Failed';
+    });
+
+    // Connection error
+    socket.on('connect_error', (error) => {
+        console.error('WebSocket connection error:', error);
+        wsStatus.className = 'ws-status disconnected';
+        wsStatusText.textContent = 'Error';
+    });
+
+    // Listen for session updates
+    socket.on('session_update', (data) => {
+        console.log('Received session update:', data);
+        updateSessionData(data);
+    });
+
+    // Listen for keepalive acknowledgments
+    socket.on('keepalive_ack', (data) => {
+        console.log('Received keepalive acknowledgment:', data);
+    });
+}
+
+// Update session data on the page
+function updateSessionData(data) {
+    // Store sessions globally for filtering
+    if (data.sessions) {
+        allSessions = data.sessions;
+    }
+
+    // Update total count
+    const totalCountEl = document.querySelector('.user-count .count');
+    if (totalCountEl) {
+        totalCountEl.textContent = data.total_count;
+    }
+
+    // Update last refresh time
+    const lastRefreshEl = document.getElementById('lastRefreshTime');
+    if (lastRefreshEl && data.last_refresh) {
+        const refreshDate = new Date(data.last_refresh);
+        lastRefreshEl.textContent = refreshDate.toLocaleString();
+    }
+
+    // Update FMC counts
+    if (data.fmc_counts) {
+        Object.entries(data.fmc_counts).forEach(([fmcName, count]) => {
+            const bubble = document.querySelector(`.fmc-count-bubble[data-fmc="${fmcName}"] .fmc-count`);
+            if (bubble) {
+                bubble.textContent = count;
+            }
+        });
+    }
+
+    // Update session table
+    if (data.sessions) {
+        updateSessionTable(data.sessions);
+    }
+
+    // Show brief notification
+    showUpdateNotification();
+}
+
+// Update the session table with new data
+function updateSessionTable(sessions) {
+    const tbody = document.getElementById('sessionTableBody');
+    if (!tbody) return;
+
+    // Get current search term
+    const searchInput = document.getElementById('username');
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+
+    // Filter sessions by search term if present
+    let filteredSessions = sessions;
+    if (searchTerm) {
+        filteredSessions = sessions.filter(s =>
+            s.username && s.username.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    // Apply FMC filter if active
+    if (currentFMCFilter) {
+        filteredSessions = filteredSessions.filter(s => s.fmc === currentFMCFilter);
+    }
+
+    // Sort sessions by username
+    filteredSessions.sort((a, b) => {
+        const usernameA = (a.username || '').toLowerCase();
+        const usernameB = (b.username || '').toLowerCase();
+        return usernameA.localeCompare(usernameB);
+    });
+
+    // Build table body rows HTML (no header - that's in <thead>)
+    let rowsHTML = '';
+
+    filteredSessions.forEach(session => {
+        const country = session.country || 'N/A';
+        const flag = countryToFlag[country] || '🌐';
+        const countryDisplay = country !== 'N/A' ? `${flag} ${country}` : country;
+
+        // Format login time to local browser time
+        const loginTime = formatTimestamp(session.login_time);
+
+        rowsHTML += `
+            <tr>
+                <td>${session.fmc || 'N/A'}</td>
+                <td>${session.username || 'N/A'}</td>
+                <td>${session.assigned_ip || 'N/A'}</td>
+                <td>${session.wan_ip || 'N/A'}</td>
+                <td><span class="country-cell" data-country="${country}">${countryDisplay}</span></td>
+                <td class="login-time" data-timestamp="${session.login_time || ''}">${loginTime}</td>
+                <td>${session.group_policy || 'N/A'}</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = rowsHTML;
+}
+
+// Show brief update notification
+function showUpdateNotification() {
+    const statusMessage = document.getElementById('statusMessage');
+    if (statusMessage) {
+        statusMessage.textContent = '✓ Updated';
+        statusMessage.className = 'status-message status-success';
+
+        setTimeout(() => {
+            statusMessage.textContent = '';
+        }, 2000);
+    }
+}
+
+// Initialize WebSocket on page load
+document.addEventListener('DOMContentLoaded', initWebSocket);
+
+// Manual refresh functionality - now uses WebSocket or falls back to REST API
+async function refreshData() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    const statusMessage = document.getElementById('statusMessage');
+    const lastRefreshTime = document.getElementById('lastRefreshTime');
+
+    // Disable button and show loading state
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = '🔄 Refreshing...';
+    statusMessage.textContent = '';
+
+    // Try WebSocket first if connected
+    if (socket && socket.connected) {
+        try {
+            // Request update via WebSocket
+            socket.emit('request_update');
+
+            statusMessage.textContent = '✓ Refresh requested!';
+            statusMessage.className = 'status-message status-success';
+
+            // Re-enable button
+            setTimeout(() => {
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = '🔄 Refresh Now';
+                statusMessage.textContent = '';
+            }, 2000);
+
+            return;
+        } catch (error) {
+            console.error('WebSocket refresh failed, falling back to REST API:', error);
+        }
+    }
+
+    // Fallback to REST API if WebSocket not available
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    try {
+        const response = await fetch('/api/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            statusMessage.textContent = '✓ Refreshed successfully!';
+            statusMessage.className = 'status-message status-success';
+
+            // Update last refresh time if provided
+            if (data.last_refresh) {
+                const refreshDate = new Date(data.last_refresh);
+                lastRefreshTime.textContent = refreshDate.toLocaleString();
+            }
+
+            // Reload the page after a short delay to show updated data
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            statusMessage.textContent = '✗ Refresh failed: ' + (data.message || 'Unknown error');
+            statusMessage.className = 'status-message status-error';
+        }
+    } catch (error) {
+        statusMessage.textContent = '✗ Network error: ' + error.message;
+        statusMessage.className = 'status-message status-error';
+    } finally {
+        // Re-enable button after a delay
+        setTimeout(() => {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = '🔄 Refresh Now';
+        }, 2000);
+    }
+}
+
+// FMC filtering functionality
+let currentFMCFilter = null;
+// eslint-disable-next-line
+let allSessions = {{ all_sessions | tojson | safe }}; // Initialize with all session data (unfiltered by search)
+
+function filterByFMC(fmcName) {
+    const bubbles = document.querySelectorAll('.fmc-count-bubble');
+
+    // If clicking the same FMC, clear the filter
+    if (currentFMCFilter === fmcName) {
+        currentFMCFilter = null;
+        bubbles.forEach(b => b.classList.remove('active'));
+        // Re-render table with all sessions
+        if (allSessions.length > 0) {
+            updateSessionTable(allSessions);
+        }
+        return;
+    }
+
+    // Set new filter
+    currentFMCFilter = fmcName;
+
+    // Update bubble active states
+    bubbles.forEach(bubble => {
+        if (bubble.dataset.fmc === fmcName) {
+            bubble.classList.add('active');
+        } else {
+            bubble.classList.remove('active');
+        }
+    });
+
+    // Re-render table with filtered sessions
+    if (allSessions.length > 0) {
+        updateSessionTable(allSessions);
+    }
+}
+</script>
+
+<div class="footer">
+    <div class="container">
+        <div class="footer-content">
+            Copyright &copy; 2025 <span class="footer-gradient-text">Bandwidth Corp IT</span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
